@@ -70,6 +70,27 @@ func TestLooksLikeMedia(t *testing.T) {
 	}
 }
 
+func TestShouldRewriteEmbyPath(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{path: "/Items/123/PlaybackInfo", want: true},
+		{path: "/emby/Items/123/PlaybackInfo", want: true},
+		{path: "/emby/Sessions/Playing/Progress", want: true},
+		{path: "/Items", want: false},
+		{path: "/emby/Items/1", want: false},
+		{path: "/web/index.html", want: false},
+		{path: "/Videos/123/stream.mp4", want: false},
+	}
+
+	for _, tt := range tests {
+		if got := shouldRewriteEmbyPath(&target{Path: strings.TrimPrefix(tt.path, "/")}); got != tt.want {
+			t.Fatalf("shouldRewriteEmbyPath(%q) = %v, want %v", tt.path, got, tt.want)
+		}
+	}
+}
+
 func TestNormalizeContentEncoding(t *testing.T) {
 	tests := []struct {
 		raw  string
@@ -188,8 +209,8 @@ func TestServeHTTPBadTarget(t *testing.T) {
 func TestServeHTTPRewriteBodyPath(t *testing.T) {
 	var port int
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.Header.Get("Accept-Encoding"); got != "identity" {
-			t.Fatalf("Accept-Encoding = %q, want identity", got)
+		if got := r.Header.Get("Accept-Encoding"); got != "" {
+			t.Fatalf("Accept-Encoding = %q, want empty", got)
 		}
 		if got := r.Header.Get("Referer"); got != "https://upstream.example.com/app" {
 			t.Fatalf("Referer = %q, want https://upstream.example.com/app", got)
@@ -221,10 +242,56 @@ func TestServeHTTPRewriteBodyPath(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
 	}
-	want := `{"url":"https://proxy.example.com/custom-prefix/http/127.0.0.1/` + strconv.Itoa(port) + `/Items/1"}`
+	want := `{"url":"http://127.0.0.1:` + strconv.Itoa(port) + `/Items/1"}`
 	if got := strings.TrimSpace(rr.Body.String()); got != want {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
+}
+
+func TestServeHTTPMediaRequestPreservesClientAcceptEncoding(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Accept-Encoding"); got != "gzip, br" {
+			t.Fatalf("Accept-Encoding = %q, want gzip, br", got)
+		}
+		w.Header().Set("Content-Type", "video/mp4")
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer upstream.Close()
+
+	port := upstream.Listener.Addr().(*net.TCPAddr).Port
+	handler := newUnsafeTestProxyHandler()
+	req := httptest.NewRequest(http.MethodGet, "/http/127.0.0.1/"+strconv.Itoa(port)+"/Videos/123/stream.mp4", nil)
+	req.Host = "proxy.example.com"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("Accept-Encoding", "gzip, br")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	assertResponseStatus(t, rr, http.StatusOK)
+}
+
+func TestServeHTTPNonRewritePathPreservesClientAcceptEncoding(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Accept-Encoding"); got != "gzip, br" {
+			t.Fatalf("Accept-Encoding = %q, want gzip, br", got)
+		}
+		w.Header().Set("Content-Type", "text/css")
+		_, _ = w.Write([]byte("body{color:red}"))
+	}))
+	defer upstream.Close()
+
+	port := upstream.Listener.Addr().(*net.TCPAddr).Port
+	handler := newUnsafeTestProxyHandler()
+	req := httptest.NewRequest(http.MethodGet, "/http/127.0.0.1/"+strconv.Itoa(port)+"/custom/site.css", nil)
+	req.Host = "proxy.example.com"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	req.Header.Set("Accept-Encoding", "gzip, br")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	assertResponseStatus(t, rr, http.StatusOK)
 }
 
 func TestServeHTTPRewriteRedirectHeaders(t *testing.T) {

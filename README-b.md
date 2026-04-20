@@ -90,7 +90,7 @@ services:
       - emby-proxy
 
   emby-proxy:
-    image: ghcr.io/gsy-allen/emby-proxy-go:v1.2.3
+    image: ghcr.io/gsy-allen/emby-proxy-go:v1.2.4
     container_name: emby-proxy
     restart: unless-stopped
     logging:

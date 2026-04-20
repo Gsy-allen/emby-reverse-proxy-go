@@ -75,24 +75,15 @@ func shouldRewriteBody(contentType string) bool {
 	return false
 }
 
-func shouldRewriteEmbyResponse(t *target, contentType string) bool {
-	if !shouldRewriteBody(contentType) {
-		return false
-	}
+func shouldRewriteEmbyPath(t *target) bool {
 	path := strings.ToLower(targetRequestPath(t))
-	return path == "/" ||
-		strings.HasPrefix(path, "/emby/") ||
-		strings.HasPrefix(path, "/items") ||
-		strings.HasPrefix(path, "/users") ||
-		strings.HasPrefix(path, "/sessions") ||
-		strings.HasPrefix(path, "/system") ||
-		strings.HasPrefix(path, "/shows") ||
-		strings.HasPrefix(path, "/movies") ||
-		strings.HasPrefix(path, "/audio") ||
-		strings.HasPrefix(path, "/artists") ||
-		strings.HasPrefix(path, "/albums") ||
-		strings.HasPrefix(path, "/playlists") ||
-		strings.HasPrefix(path, "/web/")
+	return (strings.HasPrefix(path, "/emby/items/") || strings.HasPrefix(path, "/items/")) && strings.HasSuffix(path, "/playbackinfo") ||
+		path == "/emby/sessions/playing/progress" ||
+		path == "/sessions/playing/progress"
+}
+
+func shouldRewriteEmbyResponse(t *target, contentType string) bool {
+	return shouldRewriteBody(contentType) && shouldRewriteEmbyPath(t)
 }
 
 var httpScheme = []byte("http://")
