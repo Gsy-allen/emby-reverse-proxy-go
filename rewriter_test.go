@@ -32,11 +32,9 @@ func TestShouldRewriteEmbyResponse(t *testing.T) {
 		contentType string
 		want        bool
 	}{
-		{name: "playback info json", target: &target{Path: "Items/123/PlaybackInfo"}, contentType: "application/json", want: true},
-		{name: "sessions progress json", target: &target{Path: "emby/Sessions/Playing/Progress"}, contentType: "application/json", want: true},
-		{name: "items list json", target: &target{Path: "Items"}, contentType: "application/json", want: false},
-		{name: "web html", target: &target{Path: "web/index.html"}, contentType: "text/html", want: false},
-		{name: "plain root html", target: &target{Path: ""}, contentType: "text/html", want: false},
+		{name: "emby api json", target: &target{Path: "emby/Items"}, contentType: "application/json", want: true},
+		{name: "web html", target: &target{Path: "web/index.html"}, contentType: "text/html", want: true},
+		{name: "plain root html", target: &target{Path: ""}, contentType: "text/html", want: true},
 		{name: "non-emby plain text", target: &target{Path: "notes/readme.txt"}, contentType: "text/plain", want: false},
 		{name: "binary media path", target: &target{Path: "Videos/1/stream.mp4"}, contentType: "video/mp4", want: false},
 	}
@@ -150,23 +148,23 @@ func TestShouldRewriteEmbyResponseNonEmbyPath(t *testing.T) {
 }
 
 func TestShouldRewriteEmbyResponseEmbyPath(t *testing.T) {
-	target := &target{Path: "emby/Items/123/PlaybackInfo"}
+	target := &target{Path: "emby/Items"}
 	if !shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = false, want true for playback info path")
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for Emby API path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseWebPath(t *testing.T) {
 	target := &target{Path: "web/index.html"}
-	if shouldRewriteEmbyResponse(target, "text/html") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for web path")
+	if !shouldRewriteEmbyResponse(target, "text/html") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for web path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseRootPath(t *testing.T) {
 	target := &target{Path: ""}
-	if shouldRewriteEmbyResponse(target, "text/html") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for root path")
+	if !shouldRewriteEmbyResponse(target, "text/html") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for root path")
 	}
 }
 
@@ -249,23 +247,23 @@ func TestRewriteSingleURLPreservesFragmentLikeSuffixInPath(t *testing.T) {
 }
 
 func TestShouldRewriteEmbyResponseCaseInsensitivePath(t *testing.T) {
-	target := &target{Path: "EMBY/Items/123/PlaybackInfo"}
-	if !shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = false, want true for case-insensitive playback info path")
+	target := &target{Path: "Web/Index.html"}
+	if !shouldRewriteEmbyResponse(target, "text/html") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for case-insensitive web path")
 	}
 }
 
 func TestShouldRewriteEmbyResponsePlaylistPath(t *testing.T) {
 	target := &target{Path: "Playlists/123/Items"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for playlist path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for playlist path")
 	}
 }
 
 func TestShouldRewriteEmbyResponsePlainTextOnRoot(t *testing.T) {
 	target := &target{Path: ""}
-	if shouldRewriteEmbyResponse(target, "text/plain") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for root text response")
+	if !shouldRewriteEmbyResponse(target, "text/plain") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for root text response")
 	}
 }
 
@@ -408,57 +406,57 @@ func TestRewriteSingleURLUppercaseSchemeUntouched(t *testing.T) {
 
 func TestShouldRewriteEmbyResponseUsersPath(t *testing.T) {
 	target := &target{Path: "Users/AuthenticateByName"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for users path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for users path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseSessionsPath(t *testing.T) {
 	target := &target{Path: "Sessions/Playing"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for sessions path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for sessions path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseSystemPath(t *testing.T) {
 	target := &target{Path: "System/Info/Public"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for system path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for system path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseMoviesPath(t *testing.T) {
 	target := &target{Path: "Movies/Recommendations"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for movies path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for movies path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseArtistsPath(t *testing.T) {
 	target := &target{Path: "Artists/AlbumArtists"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for artists path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for artists path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseAlbumsPath(t *testing.T) {
 	target := &target{Path: "Albums/Latest"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for albums path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for albums path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseShowsPath(t *testing.T) {
 	target := &target{Path: "Shows/NextUp"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for shows path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for shows path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseAudioPath(t *testing.T) {
 	target := &target{Path: "Audio/Albums"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for audio path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for audio path")
 	}
 }
 
@@ -655,8 +653,8 @@ func TestRewriteBodyDefaultPorts(t *testing.T) {
 
 func TestShouldRewriteEmbyResponseAlbumsLowercase(t *testing.T) {
 	target := &target{Path: "albums/latest"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for albums/latest")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for albums/latest")
 	}
 }
 
@@ -736,35 +734,35 @@ func TestShouldRewriteBodyRejectsBinary(t *testing.T) {
 
 func TestShouldRewriteEmbyResponsePlaylistsLowercase(t *testing.T) {
 	target := &target{Path: "playlists/1/items"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for playlists path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for playlists path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseArtistsLowercase(t *testing.T) {
 	target := &target{Path: "artists/albumartists"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for artists path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for artists path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseMoviesLowercase(t *testing.T) {
 	target := &target{Path: "movies/recommendations"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for movies path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for movies path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseShowsLowercase(t *testing.T) {
 	target := &target{Path: "shows/nextup"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for shows path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for shows path")
 	}
 }
 
 func TestShouldRewriteEmbyResponseAudioLowercase(t *testing.T) {
 	target := &target{Path: "audio/albums"}
-	if shouldRewriteEmbyResponse(target, "application/json") {
-		t.Fatal("shouldRewriteEmbyResponse() = true, want false for audio path")
+	if !shouldRewriteEmbyResponse(target, "application/json") {
+		t.Fatal("shouldRewriteEmbyResponse() = false, want true for audio path")
 	}
 }
